@@ -187,21 +187,25 @@ async function lookupBooking(bookingId){
         document.getElementById("bookingInfo").innerHTML = `
         <div class="card">
 
-            <h2>${currentBooking.memberName}</h2>
+            <h2>👤 ${currentBooking.memberName}</h2>
 
-            <p><b>Booking ID:</b> ${currentBooking.bookingId}</p>
+<p><b>📱 Phone:</b> ${currentBooking.phoneNumber || ""}</p>
 
-            <p><b>Membership:</b> ${currentBooking.membershipNumber}</p>
+<p><b>🆔 Booking ID:</b> ${currentBooking.bookingId}</p>
 
-            <p><b>Adults:</b> ${currentBooking.adults}</p>
+<p><b>Membership:</b> ${currentBooking.membershipNumber}</p>
 
-            <p><b>Children:</b> ${currentBooking.children}</p>
+<hr>
 
-            <p><b>Guests:</b> ${currentBooking.guests}</p>
+<p><b>👨 Adults:</b> ${currentBooking.adults}</p>
 
-            <p><b>Total:</b> ${currentBooking.totalPeople}</p>
+<p><b>🧒 Children:</b> ${currentBooking.children}</p>
 
-            <p><b>Status:</b> ${currentBooking.checkInStatus}</p>
+<p><b>👥 Guests:</b> ${currentBooking.guests}</p>
+
+<p><b>🎟️ Total People:</b> ${currentBooking.totalPeople}</p>
+
+<p><b>Status:</b> ${currentBooking.checkInStatus}</p>
 
             ${actionArea}
 
