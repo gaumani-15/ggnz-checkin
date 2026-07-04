@@ -157,9 +157,9 @@ async function lookupBooking(bookingId){
         let buttonHtml = "";
 
         if(
-            currentBooking.checkInStatus &&
-            currentBooking.checkInStatus.toLowerCase().includes("checked")
-        ){
+    currentBooking.checkInStatus &&
+    currentBooking.checkInStatus.trim().toLowerCase() === "checked in"
+){
 
             buttonHtml = `
             <div style="margin-top:15px;color:red;font-weight:bold;font-size:22px;">
