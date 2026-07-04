@@ -1,27 +1,202 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GGNZ Check-In</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="https://unpkg.com/html5-qrcode"></script>
+<title>GGNZ Event Check-In</title>
 
-  <link rel="stylesheet" href="style.css">
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body{
+    font-family:Arial,sans-serif;
+    margin:20px;
+    max-width:700px;
+}
+
+h2{
+    text-align:center;
+}
+
+#reader{
+    width:100%;
+    max-width:500px;
+    margin:auto;
+}
+
+.card{
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:15px;
+    margin-top:15px;
+}
+
+button{
+    width:100%;
+    padding:12px;
+    font-size:16px;
+    margin-top:10px;
+    cursor:pointer;
+}
+
+.checkin-btn{
+    background:#28a745;
+    color:white;
+    border:none;
+}
+
+.status{
+    margin-top:15px;
+    font-weight:bold;
+}
+</style>
 </head>
 
 <body>
 
-<h1>GGNZ Event Check-In</h1>
+<h2>GGNZ Event Check-In</h2>
+
+<button onclick="startScanner()">
+📷 Start Scanner
+</button>
 
 <div id="reader"></div>
 
-<button id="startBtn">
-Start Scanner
-</button>
-
 <div id="bookingInfo"></div>
 
-<script src="app.js"></script>
+<div id="status" class="status"></div>
+
+<script>
+
+const API_URL =
+"https://script.google.com/macros/s/AKfycbzwMCICNZiKtrJPs_5jAbV_2B7kOEYIF9Gw5fXmNjQoieGEULsDFW7_qAexESGg44yRJQ/exec";
+
+let currentBookingId = "";
+let scanner = null;
+
+function startScanner(){
+
+    document.getElementById("status").innerHTML = "";
+
+    scanner = new Html5Qrcode("reader");
+
+    scanner.start(
+        { facingMode: "environment" },
+        {
+            fps: 10,
+            qrbox: 250
+        },
+        onScanSuccess
+    )
+    .catch(err=>{
+        alert("Camera Error: " + err);
+    });
+}
+
+async function onScanSuccess(decodedText){
+
+    currentBookingId = decodedText.trim();
+
+    await scanner.stop();
+
+    lookupBooking(currentBookingId);
+}
+
+async function lookupBooking(bookingId){
+
+    document.getElementById("status").innerHTML =
+        "Looking up booking...";
+
+    try{
+
+        const response =
+            await fetch(
+                API_URL +
+                "?action=lookup&bookingId=" +
+                encodeURIComponent(bookingId)
+            );
+
+        const data = await response.json();
+
+        if(!data.success){
+
+            document.getElementById("status").innerHTML =
+                "❌ Booking Not Found";
+
+            return;
+        }
+
+        const b = data.booking;
+
+        document.getElementById("bookingInfo").innerHTML = `
+        <div class="card">
+            <h3>${b.memberName}</h3>
+
+            <p><b>Booking ID:</b> ${b.bookingId}</p>
+            <p><b>Membership:</b> ${b.membershipNumber}</p>
+
+            <p><b>Adults:</b> ${b.adults}</p>
+            <p><b>Children:</b> ${b.children}</p>
+            <p><b>Guests:</b> ${b.guests}</p>
+            <p><b>Total:</b> ${b.totalPeople}</p>
+
+            <p><b>Status:</b> ${b.checkInStatus}</p>
+
+            <button
+                class="checkin-btn"
+                onclick="checkInBooking()">
+                ✅ Check In
+            </button>
+        </div>
+        `;
+
+        document.getElementById("status").innerHTML = "";
+
+    }
+    catch(err){
+
+        document.getElementById("status").innerHTML =
+            "❌ Error: " + err;
+    }
+}
+
+async function checkInBooking(){
+
+    document.getElementById("status").innerHTML =
+        "Checking In...";
+
+    try{
+
+        const response =
+            await fetch(
+                API_URL +
+                "?action=checkin&bookingId=" +
+                encodeURIComponent(currentBookingId)
+            );
+
+        const data = await response.json();
+
+        if(data.success){
+
+            document.getElementById("status").innerHTML =
+                "✅ Checked In Successfully";
+
+        }else{
+
+            document.getElementById("status").innerHTML =
+                "⚠️ " + data.message;
+        }
+
+    }
+    catch(err){
+
+        document.getElementById("status").innerHTML =
+            "❌ Error: " + err;
+    }
+}
+
+</script>
 
 </body>
 </html>
