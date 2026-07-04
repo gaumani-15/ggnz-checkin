@@ -9,55 +9,77 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
+
 body{
     font-family:Arial,sans-serif;
     margin:20px;
     max-width:700px;
 }
 
-h2{
+h1{
     text-align:center;
-}
-
-#reader{
-    width:100%;
-    max-width:500px;
-    margin:auto;
-}
-
-.card{
-    border:1px solid #ddd;
-    border-radius:10px;
-    padding:15px;
-    margin-top:15px;
 }
 
 button{
     width:100%;
-    padding:12px;
-    font-size:16px;
+    padding:15px;
+    font-size:20px;
+    border:none;
+    border-radius:8px;
     margin-top:10px;
-    cursor:pointer;
+}
+
+.scan-btn{
+    background:#e9e9e9;
 }
 
 .checkin-btn{
     background:#28a745;
     color:white;
-    border:none;
+}
+
+.next-btn{
+    background:#007bff;
+    color:white;
+}
+
+#reader{
+    margin-top:15px;
+}
+
+.card{
+    border:1px solid #ccc;
+    border-radius:15px;
+    padding:20px;
+    margin-top:20px;
 }
 
 .status{
-    margin-top:15px;
+    margin-top:20px;
+    text-align:center;
+}
+
+.success{
+    color:green;
+    font-size:28px;
     font-weight:bold;
 }
+
+.wristband{
+    font-size:42px;
+    font-weight:bold;
+    color:#d35400;
+    margin-top:15px;
+}
+
 </style>
 </head>
 
 <body>
 
-<h2>GGNZ Event Check-In</h2>
+<h1>GGNZ Event Check-In</h1>
 
-<button onclick="startScanner()">
+<button class="scan-btn" onclick="startScanner()">
 📷 Start Scanner
 </button>
 
@@ -72,12 +94,14 @@ button{
 const API_URL =
 "https://script.google.com/macros/s/AKfycbzwMCICNZiKtrJPs_5jAbV_2B7kOEYIF9Gw5fXmNjQoieGEULsDFW7_qAexESGg44yRJQ/exec";
 
-let currentBookingId = "";
 let scanner = null;
+let currentBookingId = "";
+let currentBooking = null;
 
 function startScanner(){
 
     document.getElementById("status").innerHTML = "";
+    document.getElementById("bookingInfo").innerHTML = "";
 
     scanner = new Html5Qrcode("reader");
 
@@ -89,7 +113,7 @@ function startScanner(){
         },
         onScanSuccess
     )
-    .catch(err=>{
+    .catch(err => {
         alert("Camera Error: " + err);
     });
 }
@@ -98,7 +122,9 @@ async function onScanSuccess(decodedText){
 
     currentBookingId = decodedText.trim();
 
-    await scanner.stop();
+    try{
+        await scanner.stop();
+    }catch(e){}
 
     lookupBooking(currentBookingId);
 }
@@ -110,12 +136,11 @@ async function lookupBooking(bookingId){
 
     try{
 
-        const response =
-            await fetch(
-                API_URL +
-                "?action=lookup&bookingId=" +
-                encodeURIComponent(bookingId)
-            );
+        const response = await fetch(
+            API_URL +
+            "?action=lookup&bookingId=" +
+            encodeURIComponent(bookingId)
+        );
 
         const data = await response.json();
 
@@ -127,27 +152,53 @@ async function lookupBooking(bookingId){
             return;
         }
 
-        const b = data.booking;
+        currentBooking = data.booking;
 
-        document.getElementById("bookingInfo").innerHTML = `
-        <div class="card">
-            <h3>${b.memberName}</h3>
+        let buttonHtml = "";
 
-            <p><b>Booking ID:</b> ${b.bookingId}</p>
-            <p><b>Membership:</b> ${b.membershipNumber}</p>
+        if(
+            currentBooking.checkInStatus &&
+            currentBooking.checkInStatus.toLowerCase().includes("checked")
+        ){
 
-            <p><b>Adults:</b> ${b.adults}</p>
-            <p><b>Children:</b> ${b.children}</p>
-            <p><b>Guests:</b> ${b.guests}</p>
-            <p><b>Total:</b> ${b.totalPeople}</p>
+            buttonHtml = `
+            <div style="margin-top:15px;color:red;font-weight:bold;font-size:22px;">
+            ⚠️ Already Checked In
+            </div>
+            `;
+        }
+        else{
 
-            <p><b>Status:</b> ${b.checkInStatus}</p>
-
+            buttonHtml = `
             <button
                 class="checkin-btn"
                 onclick="checkInBooking()">
                 ✅ Check In
             </button>
+            `;
+        }
+
+        document.getElementById("bookingInfo").innerHTML = `
+        <div class="card">
+
+            <h2>${currentBooking.memberName}</h2>
+
+            <p><b>Booking ID:</b> ${currentBooking.bookingId}</p>
+
+            <p><b>Membership:</b> ${currentBooking.membershipNumber}</p>
+
+            <p><b>Adults:</b> ${currentBooking.adults}</p>
+
+            <p><b>Children:</b> ${currentBooking.children}</p>
+
+            <p><b>Guests:</b> ${currentBooking.guests}</p>
+
+            <p><b>Total:</b> ${currentBooking.totalPeople}</p>
+
+            <p><b>Status:</b> ${currentBooking.checkInStatus}</p>
+
+            ${buttonHtml}
+
         </div>
         `;
 
@@ -168,36 +219,49 @@ async function checkInBooking(){
 
     try{
 
-        const response =
-            await fetch(
-                API_URL +
-                "?action=checkin&bookingId=" +
-                encodeURIComponent(currentBookingId)
-            );
+        const response = await fetch(
+            API_URL +
+            "?action=checkin&bookingId=" +
+            encodeURIComponent(currentBookingId)
+        );
 
         const data = await response.json();
 
-       if(data.success){
+        if(data.success){
 
-    const totalPeople =
-      document.getElementById("totalPeople").value;
+            document.getElementById("status").innerHTML = `
+                <div class="success">
+                    ✅ CHECKED IN SUCCESSFULLY
+                </div>
 
-    document.getElementById("status").innerHTML =
-      `
-      <div style="font-size:22px;font-weight:bold;color:green;">
-      ✅ Checked In Successfully
-      </div>
+                <div class="wristband">
+                    🎟️ ISSUE ${currentBooking.totalPeople} WRISTBANDS
+                </div>
 
-      <div style="font-size:28px;font-weight:bold;margin-top:10px;">
-      🎟️ Issue ${totalPeople} Wristbands
-      </div>
-      `;
-}
+                <button
+                    class="next-btn"
+                    onclick="scanNext()">
+                    🔄 Scan Next Attendee
+                </button>
+            `;
 
         }else{
 
-            document.getElementById("status").innerHTML =
-                "⚠️ " + data.message;
+            document.getElementById("status").innerHTML = `
+                <div style="color:red;font-size:24px;font-weight:bold;">
+                ⚠️ ${data.message}
+                </div>
+
+                <div class="wristband">
+                🎟️ ISSUE ${currentBooking.totalPeople} WRISTBANDS
+                </div>
+
+                <button
+                    class="next-btn"
+                    onclick="scanNext()">
+                    🔄 Scan Next Attendee
+                </button>
+            `;
         }
 
     }
@@ -206,6 +270,14 @@ async function checkInBooking(){
         document.getElementById("status").innerHTML =
             "❌ Error: " + err;
     }
+}
+
+function scanNext(){
+
+    document.getElementById("bookingInfo").innerHTML = "";
+    document.getElementById("status").innerHTML = "";
+
+    startScanner();
 }
 
 </script>
