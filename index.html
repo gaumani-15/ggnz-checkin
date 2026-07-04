@@ -88,6 +88,21 @@ button{
 </button>
 
 <div id="reader"></div>
+    <hr>
+
+<h3>🔍 Manual Lookup</h3>
+
+<input
+    type="text"
+    id="manualLookup"
+    placeholder="Booking ID or Membership Number"
+    style="width:100%;padding:12px;font-size:18px;">
+
+<button class="scan-btn" onclick="manualLookup()">
+    Find Booking
+</button>
+
+<hr>
 
 <div id="bookingInfo"></div>
 
@@ -219,7 +234,114 @@ async function lookupBooking(bookingId){
             "❌ Error: " + err;
     }
 }
+async function manualLookup(){
 
+    const value =
+        document.getElementById("manualLookup")
+        .value
+        .trim();
+
+    if(!value){
+
+        alert(
+            "Enter Booking ID or Membership Number"
+        );
+
+        return;
+    }
+
+    document.getElementById("status").innerHTML =
+        "Looking up booking...";
+
+    try{
+
+        const response = await fetch(
+            API_URL +
+            "?action=lookupManual&value=" +
+            encodeURIComponent(value)
+        );
+
+        const data = await response.json();
+
+        if(!data.success){
+
+            document.getElementById("status").innerHTML =
+                "❌ Booking Not Found";
+
+            return;
+        }
+
+        currentBooking = data.booking;
+        currentBookingId = currentBooking.bookingId;
+
+        const checkStatus =
+            (currentBooking.checkInStatus || "")
+            .trim()
+            .toLowerCase();
+
+        let actionArea = "";
+
+        if(checkStatus === "checked in"){
+
+            actionArea = `
+            <div class="warning">
+            ⚠️ Already Checked In
+            </div>
+            `;
+        }
+        else{
+
+            actionArea = `
+            <button
+                class="checkin-btn"
+                onclick="checkInBooking()">
+                ✅ Check In
+            </button>
+            `;
+        }
+
+        document.getElementById("bookingInfo").innerHTML = `
+        <div class="card">
+
+            <h2>👤 ${currentBooking.memberName}</h2>
+
+            <p><b>🆔 Booking ID:</b>
+            ${currentBooking.bookingId}</p>
+
+            <p><b>🎫 Membership:</b>
+            ${currentBooking.membershipNumber}</p>
+
+            <hr>
+
+            <p><b>👨 Adults:</b>
+            ${currentBooking.adults}</p>
+
+            <p><b>🧒 Children:</b>
+            ${currentBooking.children}</p>
+
+            <p><b>👥 Guests:</b>
+            ${currentBooking.guests}</p>
+
+            <p><b>🎟️ Total People:</b>
+            ${currentBooking.totalPeople}</p>
+
+            <p><b>Status:</b>
+            ${currentBooking.checkInStatus}</p>
+
+            ${actionArea}
+
+        </div>
+        `;
+
+        document.getElementById("status").innerHTML = "";
+
+    }
+    catch(err){
+
+        document.getElementById("status").innerHTML =
+            "❌ Error: " + err;
+    }
+}
 async function checkInBooking(){
 
     document.getElementById("status").innerHTML =
