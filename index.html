@@ -177,10 +177,22 @@ async function checkInBooking(){
 
         const data = await response.json();
 
-        if(data.success){
+       if(data.success){
 
-            document.getElementById("status").innerHTML =
-                "✅ Checked In Successfully";
+    const totalPeople =
+      document.getElementById("totalPeople").value;
+
+    document.getElementById("status").innerHTML =
+      `
+      <div style="font-size:22px;font-weight:bold;color:green;">
+      ✅ Checked In Successfully
+      </div>
+
+      <div style="font-size:28px;font-weight:bold;margin-top:10px;">
+      🎟️ Issue ${totalPeople} Wristbands
+      </div>
+      `;
+}
 
         }else{
 
