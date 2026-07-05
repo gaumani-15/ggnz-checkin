@@ -139,8 +139,6 @@ function startScanner(){
 
 async function onScanSuccess(decodedText){
 
-    alert("QR Content:\n\n" + decodedText);
-
     currentBookingId = decodedText.trim();
 
     try{
