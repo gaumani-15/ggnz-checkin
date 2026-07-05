@@ -218,6 +218,16 @@ async function lookupBooking(bookingId){
 
 <p><b>🎟️ Total People:</b> ${currentBooking.totalPeople}</p>
 
+<p><b>Actual Attendees Today:</b></p>
+
+<input
+    type="number"
+    id="actualAttendees"
+    min="0"
+    max="${currentBooking.totalPeople}"
+    value="${currentBooking.totalPeople}"
+    style="width:100%;padding:10px;font-size:18px;">
+
 <p><b>Status:</b> ${currentBooking.checkInStatus}</p>
 
             ${actionArea}
@@ -322,11 +332,19 @@ async function manualLookup(){
             <p><b>👥 Guests:</b>
             ${currentBooking.guests}</p>
 
-            <p><b>🎟️ Total People:</b>
-            ${currentBooking.totalPeople}</p>
+            <p><b>🎟️ Total People:</b> ${currentBooking.totalPeople}</p>
 
-            <p><b>Status:</b>
-            ${currentBooking.checkInStatus}</p>
+<p><b>Actual Attendees Today:</b></p>
+
+<input
+    type="number"
+    id="actualAttendees"
+    min="0"
+    max="${currentBooking.totalPeople}"
+    value="${currentBooking.totalPeople}"
+    style="width:100%;padding:10px;font-size:18px;">
+
+<p><b>Status:</b> ${currentBooking.checkInStatus}</p>
 
             ${actionArea}
 
@@ -349,11 +367,17 @@ async function checkInBooking(){
 
     try{
 
-        const response = await fetch(
-            API_URL +
-            "?action=checkin&bookingId=" +
-            encodeURIComponent(currentBookingId)
-        );
+        const actualAttendees =
+    document.getElementById("actualAttendees").value;
+
+const response = await fetch(
+    API_URL +
+    "?action=checkin" +
+    "&bookingId=" +
+    encodeURIComponent(currentBookingId) +
+    "&actualAttendees=" +
+    encodeURIComponent(actualAttendees)
+);
 
         const data = await response.json();
 
@@ -365,7 +389,9 @@ async function checkInBooking(){
                 </div>
 
                 <div class="wristband">
-                    🎟️ ISSUE ${currentBooking.totalPeople} WRISTBANDS
+                   🎟️ ISSUE ${
+    document.getElementById("actualAttendees").value
+} WRISTBANDS
                 </div>
 
                 <button
