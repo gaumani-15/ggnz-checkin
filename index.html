@@ -216,6 +216,16 @@ async function lookupBooking(bookingId){
 
 <p><b>👥 Guests:</b> ${currentBooking.guests}</p>
 
+<hr>
+
+<p><b>🍽 Standard Meals:</b> ${currentBooking.standardMeals}</p>
+
+<p><b>🥗 Jain Meals:</b> ${currentBooking.jainMeals}</p>
+
+<p><b>🚫 No Meal:</b> ${currentBooking.noMeal}</p>
+
+<hr>
+
 <p><b>🎟️ Total People:</b> ${currentBooking.totalPeople}</p>
 
 <p><b>Actual Attendees Today:</b></p>
@@ -329,10 +339,24 @@ async function manualLookup(){
             <p><b>🧒 Children:</b>
             ${currentBooking.children}</p>
 
-            <p><b>👥 Guests:</b>
-            ${currentBooking.guests}</p>
+           <p><b>👥 Guests:</b>
+${currentBooking.guests}</p>
 
-            <p><b>🎟️ Total People:</b> ${currentBooking.totalPeople}</p>
+<hr>
+
+<p><b>🍽 Standard Meals:</b>
+${currentBooking.standardMeals}</p>
+
+<p><b>🥗 Jain Meals:</b>
+${currentBooking.jainMeals}</p>
+
+<p><b>🚫 No Meal:</b>
+${currentBooking.noMeal}</p>
+
+<hr>
+
+<p><b>🎟️ Total People:</b>
+${currentBooking.totalPeople}</p>
 
 <p><b>Actual Attendees Today:</b></p>
 
