@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>GGNZ Event Check-In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+  :root{
+    --navy: #0B1F3A;
+    --navy-deep: #071429;
+    --gold: #C9A24B;
+    --gold-bright: #E4C87A;
+    --cream: #FAF3E6;
+    --ok: #3E7C5A;
+    --warn: #B5862B;
+    --err: #A5433A;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    min-height:100vh;
+    background: radial-gradient(circle at 20% -10%, #14284a 0%, var(--navy-deep) 55%, #050d1c 100%);
+    font-family:'Work Sans', sans-serif;
+    color: var(--cream);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding: 24px 16px 60px;
+  }
+  .header{ text-align:center; margin-bottom: 18px; }
+  .eyebrow{ letter-spacing:0.28em; font-size:11px; text-transform:uppercase; color:var(--gold); margin-bottom:6px; }
+  h1{ font-family:'Cormorant Garamond', serif; font-weight:700; font-size:28px; margin:0; }
+
+  .scanner-wrap{
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 1 / 1;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid rgba(201,162,75,0.4);
+    background: #000;
+  }
+  #video{ width:100%; height:100%; object-fit:cover; display:block; }
+  .scan-frame{
+    position:absolute; inset: 12%;
+    border: 2px solid var(--gold-bright);
+    border-radius: 14px;
+    box-shadow: 0 0 0 999px rgba(0,0,0,0.35);
+    pointer-events:none;
+  }
+  .scan-status{
+    position:absolute; bottom: 14px; left:0; right:0;
+    text-align:center;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--gold-bright);
+    text-transform: uppercase;
+  }
+
+  .manual-entry{
+    width:100%; max-width: 420px;
+    margin-top: 14px;
+    display:flex;
+    gap:8px;
+  }
+  #manualId{
+    flex:1;
+    padding: 11px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.25);
+    color: var(--cream);
+    font-family: 'Work Sans', sans-serif;
+    font-size: 14px;
+  }
+  #manualId::placeholder{ color:#6F7C93; }
+  #manualBtn{
+    padding: 11px 16px;
+    border-radius: 8px;
+    border:none;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+    color: var(--navy-deep);
+    font-weight:600;
+    font-size: 13px;
+    cursor:pointer;
+  }
+
+  .camera-toggle{
+    margin-top: 10px;
+    font-size: 12px;
+    color: #A9B6CC;
+    text-decoration: underline;
+    cursor:pointer;
+    background:none; border:none;
+  }
+
+  /* Result card */
+  #resultWrap{
+    width:100%; max-width: 420px;
+    margin-top: 22px;
+    display:none;
+  }
+  .result-card{
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .result-card.ok{ background: rgba(62,124,90,0.15); border-color: rgba(62,124,90,0.5); }
+  .result-card.warn{ background: rgba(181,134,43,0.15); border-color: rgba(181,134,43,0.5); }
+  .result-card.err{ background: rgba(165,67,58,0.15); border-color: rgba(165,67,58,0.5); }
+
+  .result-status{
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+  .result-card.ok .result-status{ color:#7FD9A3; }
+  .result-card.warn .result-status{ color:#E9C773; }
+  .result-card.err .result-status{ color:#F0958B; }
+
+  .result-name{
+    font-family:'Cormorant Garamond', serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin: 2px 0 12px;
+  }
+
+  .result-meta{
+    display:flex;
+    gap: 18px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .meta-item .meta-label{ font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:#A9B6CC; }
+  .meta-item .meta-value{ font-size:16px; font-weight:700; margin-top:2px; }
+
+  .attendee-list{ margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.12); padding-top: 10px; }
+  .attendee-row{
+    display:flex; justify-content:space-between;
+    padding: 6px 0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .attendee-row .a-name{ font-weight:600; }
+  .attendee-row .a-meal{ color: var(--gold-bright); font-size: 13px; }
+
+  .result-note{
+    margin-top: 14px;
+    font-size: 12.5px;
+    color: #E9C773;
+  }
+
+  #scanAgainBtn{
+    margin-top: 16px;
+    width:100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(201,162,75,0.5);
+    background: transparent;
+    color: var(--gold-bright);
+    font-weight:600;
+    font-size: 14px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="eyebrow">GGNZ Event</div>
+    <h1>Check-In Scanner</h1>
+  </div>
+
+  <div class="scanner-wrap">
+    <video id="video" playsinline muted></video>
+    <div class="scan-frame"></div>
+    <div class="scan-status" id="scanStatus">Point camera at QR code</div>
+  </div>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <button class="camera-toggle" id="cameraToggle">Switch camera</button>
+
+  <div class="manual-entry">
+    <input id="manualId" type="text" placeholder="Or type Member ID e.g. GGNZ-0001" autocomplete="off" />
+    <button id="manualBtn" onclick="lookupMember(document.getElementById('manualId').value.trim())">Check</button>
+  </div>
+
+  <div id="resultWrap">
+    <div class="result-card" id="resultCard">
+      <div class="result-status" id="resultStatus"></div>
+      <div class="result-name" id="resultName"></div>
+      <div class="result-meta" id="resultMeta"></div>
+      <div class="attendee-list" id="attendeeList"></div>
+      <div class="result-note" id="resultNote"></div>
+    </div>
+    <button id="scanAgainBtn" onclick="resetScanner()">Scan Next</button>
+  </div>
+
+<script>
+  // ---- CONFIGURE THIS ----
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxpOp98f1CdvtAHMjWgbyxC4u__7J2JkmFVkG14CddZmhpxUDShpKGTQd36qe7KtGGV/exec";
+  // -------------------------
+
+  let stream = null;
+  let scanning = true;
+  let currentFacingMode = 'environment';
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  async function startCamera(facingMode) {
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode } }
+      });
+      video.srcObject = stream;
+      await video.play();
+      scanning = true;
+      requestAnimationFrame(tick);
+    } catch (err) {
+      document.getElementById('scanStatus').textContent = 'Camera unavailable — use manual entry below';
+    }
+  }
+
+  document.getElementById('cameraToggle').addEventListener('click', () => {
+    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    startCamera(currentFacingMode);
+  });
+
+  function tick() {
+    if (!scanning) return;
+
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert'
+      });
+
+      if (code && code.data) {
+        scanning = false;
+        document.getElementById('scanStatus').textContent = 'Scanned!';
+        lookupMember(code.data.trim());
+        return;
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function jsonpRequest(url, callbackName) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const timeout = setTimeout(() => { cleanup(); reject(new Error('Request timed out')); }, 10000);
+
+      window[callbackName] = (data) => {
+        clearTimeout(timeout);
+        cleanup();
+        resolve(data);
+      };
+      function cleanup() { delete window[callbackName]; script.remove(); }
+      script.onerror = () => { clearTimeout(timeout); cleanup(); reject(new Error('Network error')); };
+      script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + callbackName;
+      document.body.appendChild(script);
+    });
+  }
+
+  async function lookupMember(memberId) {
+    if (!memberId) return;
+    scanning = false;
+
+    try {
+      const callbackName = 'ggnzCheckinCb_' + Date.now();
+      const url = `${APPS_SCRIPT_URL}?action=checkin&id=${encodeURIComponent(memberId)}`;
+      const result = await jsonpRequest(url, callbackName);
+      renderResult(memberId, result);
+    } catch (err) {
+      renderResult(memberId, { found: false, error: true });
+    }
+  }
+
+  function renderResult(memberId, result) {
+    const wrap = document.getElementById('resultWrap');
+    const card = document.getElementById('resultCard');
+    const status = document.getElementById('resultStatus');
+    const name = document.getElementById('resultName');
+    const meta = document.getElementById('resultMeta');
+    const attendeeList = document.getElementById('attendeeList');
+    const note = document.getElementById('resultNote');
+
+    wrap.style.display = 'block';
+    meta.innerHTML = '';
+    attendeeList.innerHTML = '';
+    note.textContent = '';
+
+    if (!result || !result.found) {
+      card.className = 'result-card err';
+      status.textContent = '✕ No RSVP Found';
+      name.textContent = memberId;
+      note.textContent = 'This Member ID has no matching RSVP for this event. Please check at the desk.';
+      return;
+    }
+
+    card.className = result.alreadyCheckedIn ? 'result-card warn' : 'result-card ok';
+    status.textContent = result.alreadyCheckedIn ? '⚠ Already Checked In' : '✓ RSVP Confirmed';
+    name.textContent = result.primaryContact || memberId;
+
+    meta.innerHTML = `
+      <div class="meta-item">
+        <div class="meta-label">Members</div>
+        <div class="meta-value">${result.memberCount ?? '-'}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">RSVP ID</div>
+        <div class="meta-value" style="font-size:13px;">${result.rsvpId || '-'}</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Payment</div>
+        <div class="meta-value" style="font-size:13px;">${result.paymentStatus || '-'}</div>
+      </div>
+    `;
+
+    (result.attendees || []).forEach(a => {
+      const row = document.createElement('div');
+      row.className = 'attendee-row';
+      row.innerHTML = `<span class="a-name">${a.name}</span><span class="a-meal">${a.mealOption || ''}</span>`;
+      attendeeList.appendChild(row);
+    });
+
+    if (result.alreadyCheckedIn) {
+      note.textContent = 'First checked in at ' + (result.checkedInAt || 'an earlier time') + '.';
+    }
+  }
+
+  function resetScanner() {
+    document.getElementById('resultWrap').style.display = 'none';
+    document.getElementById('manualId').value = '';
+    document.getElementById('scanStatus').textContent = 'Point camera at QR code';
+    scanning = true;
+    requestAnimationFrame(tick);
+  }
+
+  document.getElementById('manualId').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') lookupMember(e.target.value.trim());
+  });
+
+  startCamera(currentFacingMode);
+</script>
+
+</body>
+</html>
